@@ -1,557 +1,623 @@
--- Real Mobile RP Exploits v2 (Anti-Cheat Bypass + Admin Detection)
--- Advanced stealth systems for maximum security
+
+-- Advanced Mobile Roleplay Spy v3.0 - Delta/Hydrogen Compatible
+-- Specialized for money tracking, salary monitoring and script generation
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local player = Players.LocalPlayer
 
--- Anti-Detection Variables
-local stealthMode = true
-local adminDetected = false
-local menuVisible = true
-local originalFunctions = {}
-
--- Admin Detection System (Advanced)
-local function detectAdmin()
-    local adminKeywords = {"mod", "adm", "admin", "staff", "owner", "dev", "moderador", "administrador"}
-    local adminFound = false
-    
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= Player then
-            local name = p.Name:lower()
-            local displayName = p.DisplayName:lower()
-            
-            -- Check names
-            for _, keyword in pairs(adminKeywords) do
-                if name:find(keyword) or displayName:find(keyword) then
-                    adminFound = true
-                    break
-                end
-            end
-            
-            -- Check for admin badges/groups
-            pcall(function()
-                local userId = p.UserId
-                -- Check if user has admin privileges (common group ranks)
-                if game:GetService("GroupService"):GetGroupInfoAsync(p.UserId) then
-                    adminFound = true
-                end
-            end)
-            
-            if adminFound then break end
-        end
-    end
-    
-    return adminFound
-end
-
--- Bypass Anti-Cheat Detection
-local function bypassAntiCheat()
-    -- Spoof commonly monitored functions
-    local oldNamecall = getrawmetatable(game).__namecall
-    if oldNamecall then
-        getrawmetatable(game).__namecall = function(self, ...)
-            local method = getnamecallmethod()
-            local args = {...}
-            
-            -- Block specific anti-cheat calls
-            if method == "FireServer" and tostring(self):find("AntiCheat") then
-                return -- Block anti-cheat reports
-            end
-            
-            -- Spoof WalkSpeed checks
-            if method == "GetPropertyChangedSignal" and args[1] == "WalkSpeed" then
-                return -- Block speed monitoring
-            end
-            
-            return oldNamecall(self, ...)
-        end
-    end
-    
-    -- Hook into common anti-cheat systems
-    pcall(function()
-        for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-            if obj.Name:lower():find("anticheat") or obj.Name:lower():find("anticheats") then
-                obj:Destroy()
-            end
-        end
-    end)
-end
-
--- Stealth notification system
-local function stealthNotify(message, duration, color)
-    if adminDetected then return end
-    
-    local notification = Instance.new("TextLabel")
-    notification.Size = UDim2.new(0, 250, 0, 30)
-    notification.Position = UDim2.new(1, -260, 0, math.random(50, 200))
-    notification.BackgroundColor3 = color or Color3.fromRGB(25, 25, 35)
-    notification.BorderSizePixel = 0
-    notification.Text = message
-    notification.TextColor3 = Color3.fromRGB(255, 255, 255)
-    notification.TextSize = 11
-    notification.Font = Enum.Font.Gotham
-    notification.TextTransparency = 1
-    notification.BackgroundTransparency = 1
-    notification.Parent = PlayerGui:FindFirstChild("RealRPExploits") or PlayerGui
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = notification
-    
-    -- Smooth fade in/out
-    local fadeIn = TweenService:Create(notification, TweenInfo.new(0.3), {
-        TextTransparency = 0,
-        BackgroundTransparency = 0.2
-    })
-    
-    local fadeOut = TweenService:Create(notification, TweenInfo.new(0.3), {
-        TextTransparency = 1,
-        BackgroundTransparency = 1
-    })
-    
-    fadeIn:Play()
-    
-    spawn(function()
-        wait(duration or 3)
-        fadeOut:Play()
-        fadeOut.Completed:Wait()
-        notification:Destroy()
-    end)
-end
-
--- Advanced item duplication
-local function duplicateInventory()
-    if adminDetected then return false end
-    
-    local success = false
-    
-    -- Method 1: Remote manipulation with delay
-    spawn(function()
-        for i = 1, 3 do -- Multiple attempts
-            pcall(function()
-                local modules = ReplicatedStorage:FindFirstChild("Modules")
-                if modules then
-                    local invRemotes = modules:FindFirstChild("InvRemotes")
-                    if invRemotes then
-                        local invRemot = invRemotes:FindFirstChild("InvRemot")
-                        if invRemot and invRemot:IsA("RemoteEvent") then
-                            -- Get current inventory state
-                            invRemot:FireServer("duplicate", {["Action"] = "copy_all"})
-                            wait(0.5)
-                            -- Apply duplication
-                            invRemot:FireServer("update", {["Multiply"] = 2})
-                            success = true
-                        end
-                    end
-                end
-            end)
-            wait(1)
-        end
-    end)
-    
-    -- Method 2: Direct inventory value manipulation
-    if not success then
-        pcall(function()
-            if Player:FindFirstChild("Inventory") then
-                local inv = Player.Inventory
-                for _, item in pairs(inv:GetChildren()) do
-                    if item:IsA("IntValue") or item:IsA("NumberValue") then
-                        local currentValue = item.Value
-                        if currentValue > 0 then
-                            item.Value = currentValue * 2 -- Double items
-                            success = true
-                        end
-                    end
-                end
-            end
-        end)
-    end
-    
-    return success
-end
-
--- Advanced corpse teleportation
-local function teleportToCorpse()
-    if adminDetected then return false end
-    
-    local corpses = {}
-    local success = false
-    
-    -- Find dead bodies/ragdolls
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj.Name:lower():find("corpse") or obj.Name:lower():find("body") or obj.Name:lower():find("ragdoll") then
-            if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
-                table.insert(corpses, obj.HumanoidRootPart.Position)
-            end
-        end
-        
-        -- Look for humanoids with health = 0
-        if obj:IsA("Humanoid") and obj.Health <= 0 and obj.Parent:FindFirstChild("HumanoidRootPart") then
-            table.insert(corpses, obj.Parent.HumanoidRootPart.Position)
-        end
-    end
-    
-    -- Teleport to random corpse
-    if #corpses > 0 then
-        local randomCorpse = corpses[math.random(1, #corpses)]
-        local character = Player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            -- Smooth teleport to avoid detection
-            local startPos = character.HumanoidRootPart.CFrame
-            local endPos = CFrame.new(randomCorpse + Vector3.new(0, 3, 0))
-            
-            for i = 0, 1, 0.1 do
-                character.HumanoidRootPart.CFrame = startPos:Lerp(endPos, i)
-                wait(0.05)
-            end
-            success = true
-        end
-    end
-    
-    return success
-end
-
--- Advanced Fly System (Stealth)
-local flyEnabled = false
-local bodyVelocity = nil
-local bodyAngularVelocity = nil
-
-local function toggleFly(enabled)
-    if adminDetected then return false end
-    
-    flyEnabled = enabled
-    local character = Player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
-    
-    local rootPart = character.HumanoidRootPart
-    
-    if enabled then
-        -- Create fly components
-        bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.Parent = rootPart
-        
-        bodyAngularVelocity = Instance.new("BodyAngularVelocity")
-        bodyAngularVelocity.MaxTorque = Vector3.new(400000, 400000, 400000)
-        bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
-        bodyAngularVelocity.Parent = rootPart
-        
-        -- Fly control loop
-        spawn(function()
-            local camera = workspace.CurrentCamera
-            while flyEnabled and bodyVelocity and bodyVelocity.Parent do
-                local humanoid = character:FindFirstChild("Humanoid")
-                if humanoid then
-                    local moveVector = humanoid.MoveDirection
-                    local speed = 50
-                    
-                    -- Calculate movement direction
-                    local direction = Vector3.new(0, 0, 0)
-                    if moveVector.Magnitude > 0 then
-                        direction = camera.CFrame.LookVector * moveVector.Z + camera.CFrame.RightVector * moveVector.X
-                        direction = direction * speed
-                    end
-                    
-                    -- Vertical movement
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) or humanoid.Jump then
-                        direction = direction + Vector3.new(0, speed, 0)
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                        direction = direction + Vector3.new(0, -speed, 0)
-                    end
-                    
-                    bodyVelocity.Velocity = direction
-                end
-                wait()
-            end
-        end)
-    else
-        -- Cleanup
-        if bodyVelocity then bodyVelocity:Destroy() end
-        if bodyAngularVelocity then bodyAngularVelocity:Destroy() end
-        bodyVelocity = nil
-        bodyAngularVelocity = nil
-    end
-    
-    return true
-end
-
--- Enhanced exploit functions
-local function safeExploit(func, successMsg, failMsg)
-    if adminDetected then 
-        stealthNotify("⚠️ Admin detectado - Funções desabilitadas!", 3, Color3.fromRGB(255, 100, 100))
-        return false 
-    end
-    
-    local success = func()
-    if success then
-        stealthNotify("✅ " .. successMsg, 3, Color3.fromRGB(100, 255, 100))
-    else
-        stealthNotify("❌ " .. failMsg, 3, Color3.fromRGB(255, 100, 100))
-    end
-    return success
-end
-
--- Main exploit functions
-local RealExploits = {
-    GetFreeMoney = function()
-        return safeExploit(function()
-            local amounts = {5000, 10000, 15000, 25000}
-            local amount = amounts[math.random(1, #amounts)]
-            
-            -- Try multiple money remotes
-            for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
-                if remote:IsA("RemoteEvent") then
-                    local name = remote.Name:lower()
-                    if name:find("money") or name:find("cash") or name:find("salary") or name:find("pay") then
-                        pcall(function()
-                            remote:FireServer(amount)
-                            remote:FireServer("add", amount)
-                            remote:FireServer("give", Player, amount)
-                        end)
-                    end
-                end
-            end
-            
-            -- Manipulate leaderstats
-            pcall(function()
-                local leaderstats = Player:FindFirstChild("leaderstats")
-                if leaderstats then
-                    for _, stat in pairs(leaderstats:GetChildren()) do
-                        local statName = stat.Name:lower()
-                        if statName:find("money") or statName:find("cash") or statName:find("dinheiro") then
-                            stat.Value = stat.Value + amount
-                        end
-                    end
-                end
-            end)
-            
-            return true
-        end, "Dinheiro adicionado!", "Falha ao adicionar dinheiro")
-    end,
-    
-    DuplicateItems = function()
-        return safeExploit(duplicateInventory, "Itens duplicados!", "Falha na duplicação")
-    end,
-    
-    TeleportToCorpse = function()
-        return safeExploit(teleportToCorpse, "Teleportado para corpo!", "Nenhum corpo encontrado")
-    end,
-    
-    ToggleFly = function()
-        flyEnabled = not flyEnabled
-        return safeExploit(function()
-            return toggleFly(flyEnabled)
-        end, flyEnabled and "Fly ativado!" or "Fly desativado!", "Falha no fly")
-    end,
-    
-    SpeedHack = function()
-        return safeExploit(function()
-            spawn(function()
-                local character = Player.Character
-                if character and character:FindFirstChild("Humanoid") then
-                    -- Gradual speed increase to avoid detection
-                    for speed = 16, 50, 2 do
-                        if adminDetected then break end
-                        character.Humanoid.WalkSpeed = speed
-                        wait(0.1)
-                    end
-                end
-            end)
-            return true
-        end, "Speed hack ativado!", "Falha no speed hack")
-    end,
-    
-    AntiKick = function()
-        return safeExploit(function()
-            -- Advanced anti-kick protection
-            originalFunctions.kick = Player.Kick
-            Player.Kick = function(...)
-                stealthNotify("🛡️ Kick bloqueado!", 2, Color3.fromRGB(255, 255, 100))
-            end
-            
-            -- Block remote kicks
-            for _, remote in pairs(ReplicatedStorage:GetDescendants()) do
-                if remote:IsA("RemoteEvent") and remote.Name:lower():find("kick") then
-                    remote.OnClientEvent:Connect(function() end)
-                end
-            end
-            
-            return true
-        end, "Anti-kick ativado!", "Falha no anti-kick")
-    end
+-- Mobile-friendly storage (NO localStorage)
+local spyData = {
+    remoteEvents = {},
+    remoteFunctions = {},
+    moneyTransfers = {},
+    salaryLogs = {},
+    chatLogs = {},
+    playerActions = {},
+    gameValues = {},
+    scriptTemplates = {}
 }
 
--- Create main GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "RealRPExploits"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+-- Money detection patterns
+local moneyPatterns = {
+    "money", "cash", "dinheiro", "grana", "coins", "moedas",
+    "salary", "salario", "wage", "pagamento", "payment",
+    "bank", "banco", "conta", "account", "balance", "saldo",
+    "transfer", "transferir", "send", "enviar", "give", "dar",
+    "buy", "comprar", "sell", "vender", "price", "preco"
+}
 
--- Toggle button (always visible)
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0, 60, 0, 60)
-ToggleButton.Position = UDim2.new(0, 10, 0.5, -30)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Text = "⛩️"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 50, 50)
-ToggleButton.TextSize = 24
-ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Parent = ScreenGui
+local jobPatterns = {
+    "job", "work", "emprego", "trabalho", "profissao",
+    "police", "policia", "medic", "medico", "taxi",
+    "delivery", "entrega", "mechanic", "mecanico"
+}
 
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(1, 0)
-ToggleCorner.Parent = ToggleButton
+-- Mobile-optimized GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MobileRoleplaySpy"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color = Color3.fromRGB(255, 50, 50)
-ToggleStroke.Thickness = 2
-ToggleStroke.Parent = ToggleButton
+-- Main Frame (Mobile optimized)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 350, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
 
--- Main Frame
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 350, 0, 450)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Visible = menuVisible
-MainFrame.Parent = ScreenGui
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
 
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 15)
-MainCorner.Parent = MainFrame
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(0, 255, 150)
+mainStroke.Thickness = 2
+mainStroke.Parent = mainFrame
 
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(255, 50, 50)
-MainStroke.Thickness = 3
-MainStroke.Parent = MainFrame
+-- Title Bar
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 45)
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
 
--- Title with admin warning
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.BackgroundTransparency = 1
-Title.Text = "💉 Boboca Hube"
-Title.TextColor3 = Color3.fromRGB(255, 50, 50)
-Title.TextScaled = true
-Title.Font = Enum.Font.GothamBold
-Title.Parent = MainFrame
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
 
--- Admin warning label
-local AdminWarning = Instance.new("TextLabel")
-AdminWarning.Size = UDim2.new(1, -10, 0, 30)
-AdminWarning.Position = UDim2.new(0, 5, 0, 50)
-AdminWarning.BackgroundTransparency = 1
-AdminWarning.Text = ""
-AdminWarning.TextColor3 = Color3.fromRGB(255, 100, 100)
-AdminWarning.TextSize = 12
-AdminWarning.Font = Enum.Font.GothamBold
-AdminWarning.TextWrapped = true
-AdminWarning.Visible = false
-AdminWarning.Parent = MainFrame
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "💰 MOBILE MONEY SPY"
+titleLabel.TextColor3 = Color3.black
+titleLabel.TextSize = 14
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
 
--- Button creation function
-local function createExploitButton(name, icon, position, callback)
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, -20, 0, 40)
-    Button.Position = UDim2.new(0, 10, 0, 90 + (position * 45))
-    Button.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    Button.BorderSizePixel = 0
-    Button.Text = icon .. " " .. name
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.TextSize = 13
-    Button.Font = Enum.Font.GothamSemibold
-    Button.Parent = MainFrame
+-- Toggle Button (Mobile friendly)
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 60, 0, 60)
+toggleButton.Position = UDim2.new(1, -80, 0, 20)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+toggleButton.BorderSizePixel = 0
+toggleButton.Text = "💰\nSPY"
+toggleButton.TextColor3 = Color3.white
+toggleButton.TextSize = 12
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 30)
+toggleCorner.Parent = toggleButton
+
+-- Close Button
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 35, 0, 35)
+closeButton.Position = UDim2.new(1, -40, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+closeButton.BorderSizePixel = 0
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.white
+closeButton.TextSize = 16
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 17)
+closeCorner.Parent = closeButton
+
+-- Tab System (Mobile optimized)
+local tabFrame = Instance.new("Frame")
+tabFrame.Size = UDim2.new(1, -10, 0, 40)
+tabFrame.Position = UDim2.new(0, 5, 0, 50)
+tabFrame.BackgroundTransparency = 1
+tabFrame.Parent = mainFrame
+
+local tabs = {"💰Money", "💼Jobs", "📜Scripts", "⚙️Config"}
+local tabButtons = {}
+local contentFrames = {}
+
+-- Create mobile-friendly tabs
+for i, tabName in ipairs(tabs) do
+    local tabButton = Instance.new("TextButton")
+    tabButton.Size = UDim2.new(0.25, -2, 1, 0)
+    tabButton.Position = UDim2.new(0.25 * (i-1), 2, 0, 0)
+    tabButton.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    tabButton.BorderSizePixel = 0
+    tabButton.Text = tabName
+    tabButton.TextColor3 = Color3.white
+    tabButton.TextSize = 10
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.Parent = tabFrame
     
-    local ButtonCorner = Instance.new("UICorner")
-    ButtonCorner.CornerRadius = UDim.new(0, 10)
-    ButtonCorner.Parent = Button
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 6)
+    tabCorner.Parent = tabButton
     
-    local ButtonStroke = Instance.new("UIStroke")
-    ButtonStroke.Color = Color3.fromRGB(50, 50, 60)
-    ButtonStroke.Thickness = 1
-    ButtonStroke.Parent = Button
+    tabButtons[tabName] = tabButton
     
-    Button.MouseButton1Click:Connect(function()
-        if adminDetected then
-            stealthNotify("⚠️ Admin no servidor - Função desabilitada!", 3, Color3.fromRGB(255, 100, 100))
-            return
-        end
-        
-        Button.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-        ButtonStroke.Color = Color3.fromRGB(255, 100, 100)
-        
-        spawn(function()
-            callback()
-            wait(0.3)
-            Button.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-            ButtonStroke.Color = Color3.fromRGB(50, 50, 60)
-        end)
-    end)
+    -- Content Frame
+    local contentFrame = Instance.new("ScrollingFrame")
+    contentFrame.Name = tabName .. "Content"
+    contentFrame.Size = UDim2.new(1, -10, 1, -100)
+    contentFrame.Position = UDim2.new(0, 5, 0, 95)
+    contentFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    contentFrame.BorderSizePixel = 0
+    contentFrame.ScrollBarThickness = 4
+    contentFrame.Visible = false
+    contentFrame.Parent = mainFrame
     
-    return Button
+    local contentCorner = Instance.new("UICorner")
+    contentCorner.CornerRadius = UDim.new(0, 8)
+    contentCorner.Parent = contentFrame
+    
+    contentFrames[tabName] = contentFrame
 end
 
--- Create buttons
-createExploitButton("Free Money", "💉", 0, RealExploits.GetFreeMoney)
-createExploitButton("Duplicate Items", "💉", 1, RealExploits.DuplicateItems)
-createExploitButton("Speed Hack", "💉", 2, RealExploits.SpeedHack)
-createExploitButton("Toggle Fly", "💉", 3, RealExploits.ToggleFly)
-createExploitButton("Teleport to Corpse", "💉", 4, RealExploits.TeleportToCorpse)
-createExploitButton("Anti Kick", "🛡️", 5, RealExploits.AntiKick)
+-- Show first tab
+contentFrames["💰Money"].Visible = true
+tabButtons["💰Money"].BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+
+-- Tab switching
+for tabName, button in pairs(tabButtons) do
+    button.MouseButton1Click:Connect(function()
+        for name, frame in pairs(contentFrames) do
+            frame.Visible = false
+            tabButtons[name].BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        end
+        contentFrames[tabName].Visible = true
+        button.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    end)
+end
 
 -- Toggle functionality
-ToggleButton.MouseButton1Click:Connect(function()
-    menuVisible = not menuVisible
-    MainFrame.Visible = menuVisible
-    
-    local tween = TweenService:Create(ToggleButton, TweenInfo.new(0.2), {
-        Rotation = menuVisible and 0 or 90
-    })
-    tween:Play()
+local function toggleGui()
+    mainFrame.Visible = not mainFrame.Visible
+    if mainFrame.Visible then
+        toggleButton.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+    else
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    end
+end
+
+toggleButton.MouseButton1Click:Connect(toggleGui)
+closeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 end)
 
--- Admin detection loop
-spawn(function()
-    while wait(5) do
-        local wasDetected = adminDetected
-        adminDetected = detectAdmin()
+-- Mobile touch support for hotkey
+if UserInputService.TouchEnabled then
+    local doubleTapTime = 0
+    UserInputService.TouchTap:Connect(function(touchPositions, processed)
+        if not processed and #touchPositions == 2 then
+            local currentTime = tick()
+            if currentTime - doubleTapTime < 0.5 then
+                toggleGui()
+            end
+            doubleTapTime = currentTime
+        end
+    end)
+end
+
+-- Utility Functions
+local function addLog(contentFrame, text, color, isImportant)
+    local logFrame = Instance.new("Frame")
+    logFrame.Size = UDim2.new(1, -5, 0, isImportant and 35 or 25)
+    logFrame.Position = UDim2.new(0, 2, 0, #contentFrame:GetChildren() * (isImportant and 37 or 27))
+    logFrame.BackgroundColor3 = isImportant and Color3.fromRGB(30, 30, 35) or Color3.fromRGB(20, 20, 25)
+    logFrame.BorderSizePixel = 0
+    logFrame.Parent = contentFrame
+    
+    if isImportant then
+        local logCorner = Instance.new("UICorner")
+        logCorner.CornerRadius = UDim.new(0, 4)
+        logCorner.Parent = logFrame
+    end
+    
+    local logLabel = Instance.new("TextLabel")
+    logLabel.Size = UDim2.new(1, -10, 1, 0)
+    logLabel.Position = UDim2.new(0, 5, 0, 0)
+    logLabel.BackgroundTransparency = 1
+    logLabel.Text = text
+    logLabel.TextColor3 = color or Color3.white
+    logLabel.TextSize = isImportant and 11 or 9
+    logLabel.Font = isImportant and Enum.Font.GothamBold or Enum.Font.Code
+    logLabel.TextXAlignment = Enum.TextXAlignment.Left
+    logLabel.TextYAlignment = Enum.TextYAlignment.Top
+    logLabel.TextWrapped = true
+    logLabel.Parent = logFrame
+    
+    -- Copy button for important logs
+    if isImportant then
+        local copyButton = Instance.new("TextButton")
+        copyButton.Size = UDim2.new(0, 40, 0, 20)
+        copyButton.Position = UDim2.new(1, -45, 0, 2)
+        copyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        copyButton.BorderSizePixel = 0
+        copyButton.Text = "📋"
+        copyButton.TextColor3 = Color3.white
+        copyButton.TextSize = 12
+        copyButton.Font = Enum.Font.Gotham
+        copyButton.Parent = logFrame
         
-        if adminDetected ~= wasDetected then
-            if adminDetected then
-                AdminWarning.Text = "⚠️ ADMIN DETECTADO! Todas as funções foram desabilitadas por segurança."
-                AdminWarning.Visible = true
-                MainStroke.Color = Color3.fromRGB(255, 200, 0)
-                ToggleStroke.Color = Color3.fromRGB(255, 200, 0)
-                stealthNotify("⚠️ Admin no servidor detectado!", 5, Color3.fromRGB(255, 200, 0))
-            else
-                AdminWarning.Visible = false
-                MainStroke.Color = Color3.fromRGB(255, 50, 50)
-                ToggleStroke.Color = Color3.fromRGB(255, 50, 50)
-                stealthNotify("✅ Admin saiu - Funções reativadas!", 3, Color3.fromRGB(100, 255, 100))
+        local copyCorner = Instance.new("UICorner")
+        copyCorner.CornerRadius = UDim.new(0, 10)
+        copyCorner.Parent = copyButton
+        
+        copyButton.MouseButton1Click:Connect(function()
+            if setclipboard then
+                setclipboard(text)
+                copyButton.Text = "✓"
+                wait(1)
+                copyButton.Text = "📋"
+            end
+        end)
+    end
+    
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, #contentFrame:GetChildren() * (isImportant and 37 or 27))
+    contentFrame.CanvasPosition = Vector2.new(0, contentFrame.CanvasSize.Y.Offset)
+end
+
+-- Enhanced money detection
+local function containsMoneyKeyword(text)
+    if type(text) ~= "string" then
+        text = tostring(text)
+    end
+    text = text:lower()
+    
+    for _, pattern in pairs(moneyPatterns) do
+        if text:find(pattern) then
+            return true, pattern
+        end
+    end
+    return false
+end
+
+local function containsJobKeyword(text)
+    if type(text) ~= "string" then
+        text = tostring(text)
+    end
+    text = text:lower()
+    
+    for _, pattern in pairs(jobPatterns) do
+        if text:find(pattern) then
+            return true, pattern
+        end
+    end
+    return false
+end
+
+-- Advanced argument analysis
+local function analyzeArgs(args)
+    local result = {}
+    local hasNumber = false
+    local hasMoneyKeyword = false
+    local moneyValue = nil
+    
+    for i, arg in ipairs(args) do
+        local argStr = tostring(arg)
+        
+        -- Check for numbers (potential money values)
+        if type(arg) == "number" and arg > 0 then
+            hasNumber = true
+            if arg >= 10 then -- Minimum reasonable money amount
+                moneyValue = arg
             end
         end
+        
+        -- Check for money keywords
+        local isMoney, keyword = containsMoneyKeyword(argStr)
+        if isMoney then
+            hasMoneyKeyword = true
+        end
+        
+        if type(arg) == "string" then
+            table.insert(result, '"' .. argStr .. '"')
+        else
+            table.insert(result, argStr)
+        end
+    end
+    
+    return table.concat(result, ", "), hasNumber, hasMoneyKeyword, moneyValue
+end
+
+-- Remote monitoring with enhanced money detection
+local function hookRemoteEvent(remote)
+    if spyData.remoteEvents[remote.Name] then return end
+    spyData.remoteEvents[remote.Name] = true
+    
+    local connection = remote.OnClientEvent:Connect(function(...)
+        local args = {...}
+        local argsStr, hasNumber, hasMoneyKeyword, moneyValue = analyzeArgs(args)
+        
+        -- Check remote name for money patterns
+        local remoteMoney, remoteKeyword = containsMoneyKeyword(remote.Name)
+        
+        if hasMoneyKeyword or remoteMoney or (hasNumber and moneyValue and moneyValue >= 10) then
+            local logText = string.format("💰 [%s] %s | Args: %s", 
+                os.date("%X"), remote.Name, argsStr)
+            
+            addLog(contentFrames["💰Money"], logText, Color3.fromRGB(100, 255, 100), true)
+            
+            -- Store for script generation
+            table.insert(spyData.moneyTransfers, {
+                remoteName = remote.Name,
+                args = args,
+                timestamp = os.time(),
+                value = moneyValue
+            })
+            
+            -- Auto-generate script template
+            local scriptTemplate = string.format([[
+-- Money Remote: %s
+-- Args: %s
+-- Value detected: %s
+game:GetService("ReplicatedStorage"):FindFirstChild("%s"):FireServer(%s)
+]], remote.Name, argsStr, moneyValue or "unknown", remote.Name, argsStr)
+            
+            table.insert(spyData.scriptTemplates, scriptTemplate)
+        end
+        
+        -- Check for job-related remotes
+        local isJob, jobKeyword = containsJobKeyword(remote.Name)
+        if isJob or containsJobKeyword(argsStr) then
+            local logText = string.format("💼 [%s] %s | Args: %s", 
+                os.date("%X"), remote.Name, argsStr)
+            
+            addLog(contentFrames["💼Jobs"], logText, Color3.fromRGB(255, 200, 100), true)
+        end
+    end)
+end
+
+local function hookRemoteFunction(remote)
+    if spyData.remoteFunctions[remote.Name] then return end
+    spyData.remoteFunctions[remote.Name] = true
+    
+    local originalInvoke = remote.OnClientInvoke
+    remote.OnClientInvoke = function(...)
+        local args = {...}
+        local argsStr, hasNumber, hasMoneyKeyword, moneyValue = analyzeArgs(args)
+        
+        local remoteMoney = containsMoneyKeyword(remote.Name)
+        
+        if hasMoneyKeyword or remoteMoney then
+            local logText = string.format("💰 [%s] FUNC: %s | Args: %s", 
+                os.date("%X"), remote.Name, argsStr)
+            
+            addLog(contentFrames["💰Money"], logText, Color3.fromRGB(255, 255, 100), true)
+        end
+        
+        if originalInvoke then
+            return originalInvoke(...)
+        end
+    end
+end
+
+-- Scan for remotes
+local function scanRemotes(parent)
+    for _, child in pairs(parent:GetChildren()) do
+        if child:IsA("RemoteEvent") then
+            spawn(function() hookRemoteEvent(child) end)
+        elseif child:IsA("RemoteFunction") then
+            spawn(function() hookRemoteFunction(child) end)
+        end
+        
+        if child:IsA("Folder") or child:IsA("Model") then
+            spawn(function() scanRemotes(child) end)
+        end
+    end
+end
+
+-- Initial scan
+scanRemotes(ReplicatedStorage)
+scanRemotes(workspace)
+
+-- Monitor new remotes
+ReplicatedStorage.ChildAdded:Connect(function(child)
+    wait(0.1)
+    if child:IsA("RemoteEvent") then
+        hookRemoteEvent(child)
+    elseif child:IsA("RemoteFunction") then
+        hookRemoteFunction(child)
+    elseif child:IsA("Folder") then
+        scanRemotes(child)
     end
 end)
 
--- Initialize systems
-spawn(function()
-    wait(1)
-    bypassAntiCheat()
-    RealExploits.AntiKick()
-    stealthNotify("🧛 Boboca Hube", 3)
+-- Player value monitoring (money in leaderstats)
+local function monitorPlayerValues(plr)
+    if plr.leaderstats then
+        for _, stat in pairs(plr.leaderstats:GetChildren()) do
+            if containsMoneyKeyword(stat.Name) then
+                stat:GetPropertyChangedSignal("Value"):Connect(function()
+                    local logText = string.format("💰 %s's %s changed to: %s", 
+                        plr.Name, stat.Name, tostring(stat.Value))
+                    addLog(contentFrames["💰Money"], logText, Color3.fromRGB(150, 200, 255))
+                end)
+            end
+        end
+    end
+end
+
+-- Monitor existing and new players
+for _, plr in pairs(Players:GetPlayers()) do
+    plr.CharacterAdded:Connect(function()
+        wait(2)
+        monitorPlayerValues(plr)
+    end)
+    if plr.Character then
+        monitorPlayerValues(plr)
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        wait(2)
+        monitorPlayerValues(plr)
+    end)
 end)
 
-print("🔥 boboca hube loaded with advanced security!")
+-- Script generation in Scripts tab
+local function generateScripts()
+    local scriptsContent = contentFrames["📜Scripts"]
+    
+    -- Clear existing content
+    for _, child in pairs(scriptsContent:GetChildren()) do
+        child:Destroy()
+    end
+    
+    -- Money spawn script
+    local moneySpawnScript = [[-- Auto Money Spawner (Generated)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-return RealExploits
+-- Detected money remotes:]]
+
+    for _, transfer in pairs(spyData.moneyTransfers) do
+        if transfer.value and transfer.value >= 100 then
+            moneySpawnScript = moneySpawnScript .. string.format([[
+
+-- %s (Value: %s)
+spawn(function()
+    while wait(1) do
+        pcall(function()
+            ReplicatedStorage:FindFirstChild("%s"):FireServer(%s)
+        end)
+    end
+end)]], transfer.remoteName, transfer.value, transfer.remoteName, table.concat(transfer.args, ", "))
+        end
+    end
+    
+    addLog(scriptsContent, moneySpawnScript, Color3.fromRGB(100, 255, 200), true)
+    
+    -- Salary collector script
+    local salaryScript = [[-- Auto Salary Collector
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+spawn(function()
+    while wait(60) do -- Every minute
+        for _, remote in pairs(ReplicatedStorage:GetChildren()) do
+            if remote:IsA("RemoteEvent") then
+                local name = remote.Name:lower()
+                if name:find("salary") or name:find("salario") or name:find("wage") then
+                    pcall(function()
+                        remote:FireServer()
+                    end)
+                end
+            end
+        end
+    end
+end)]]
+    
+    addLog(scriptsContent, salaryScript, Color3.fromRGB(255, 200, 100), true)
+end
+
+-- Config tab
+local configContent = contentFrames["⚙️Config"]
+
+local function createConfigButton(text, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -10, 0, 35)
+    button.Position = UDim2.new(0, 5, 0, #configContent:GetChildren() * 40)
+    button.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = Color3.white
+    button.TextSize = 12
+    button.Font = Enum.Font.Gotham
+    button.Parent = configContent
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = button
+    
+    button.MouseButton1Click:Connect(callback)
+    configContent.CanvasSize = UDim2.new(0, 0, 0, #configContent:GetChildren() * 40)
+end
+
+-- Add config buttons
+createConfigButton("🔄 Generate Money Scripts", generateScripts)
+createConfigButton("📋 Copy All Money Logs", function()
+    local allLogs = ""
+    for _, transfer in pairs(spyData.moneyTransfers) do
+        allLogs = allLogs .. string.format("%s: %s\n", transfer.remoteName, table.concat(transfer.args, ", "))
+    end
+    if setclipboard then
+        setclipboard(allLogs)
+    end
+end)
+createConfigButton("🗑️ Clear All Logs", function()
+    for _, frame in pairs(contentFrames) do
+        for _, child in pairs(frame:GetChildren()) do
+            child:Destroy()
+        end
+        frame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    end
+    spyData.moneyTransfers = {}
+    spyData.scriptTemplates = {}
+end)
+
+-- Make draggable (mobile friendly)
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+titleBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+-- Auto-notification system
+local function showNotification(title, text)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title;
+            Text = text;
+            Duration = 3;
+        })
+    end)
+end
+
+-- Initial setup
+wait(2)
+showNotification("💰 Mobile Money Spy", "Loaded! Tap the green button or double-tap with 2 fingers to open")
+
+-- Initial logs
+addLog(contentFrames["💰Money"], "💰 Mobile Money Spy v3.0 initialized", Color3.fromRGB(100, 255, 100), true)
+addLog(contentFrames["💰Money"], "🔍 Monitoring money transfers, salary, and transactions", Color3.fromRGB(150, 255, 150))
+addLog(contentFrames["💼Jobs"], "💼 Job system monitoring active", Color3.fromRGB(255, 200, 100), true)
+addLog(contentFrames["📜Scripts"], "📜 Auto-script generation ready", Color3.fromRGB(200, 150, 255), true)
+
+print("💰 Mobile Money Spy v3.0 loaded!")
+print("📱 Optimized for Delta/Hydrogen mobile executors")
+print("🎯 Specialized in money tracking and script generation")
